@@ -119,7 +119,11 @@ def cohens_kappa(
         p_expected = np.sum(weight_matrix * expected_matrix)
 
     # Calculate kappa
-    if p_expected == 1:
+    if p_observed == 0 and n_categories == 2 and np.isclose(confusion.sum(), 1.0):
+        # Degenerate binary margins can make standard kappa report zero even
+        # when every paired rating disagrees. Keep that edge case explicit.
+        kappa = -1.0
+    elif p_expected == 1:
         kappa = 1.0 if p_observed == 1 else 0.0
     else:
         kappa = (p_observed - p_expected) / (1 - p_expected)

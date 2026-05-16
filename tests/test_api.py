@@ -2,6 +2,16 @@
 
 import pytest
 import math
+
+pytest.importorskip(
+    "fastapi",
+    reason="API tests require the optional API extra: pip install -e .[api]",
+)
+pytest.importorskip(
+    "httpx",
+    reason="API tests require FastAPI TestClient dependencies",
+)
+
 from fastapi.testclient import TestClient
 from asreview_5star.api.app import create_app
 

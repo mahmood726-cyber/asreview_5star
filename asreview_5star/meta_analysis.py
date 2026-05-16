@@ -39,6 +39,16 @@ class BiasTestResult:
     details: Dict
 
 
+class ForestPlotData(dict):
+    """Dictionary payload that also supports attribute access for common keys."""
+
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError as exc:
+            raise AttributeError(name) from exc
+
+
 def pool_effects(
     effects: List[float],
     standard_errors: List[float],
@@ -376,13 +386,13 @@ def heterogeneity_stats(
 
     # Interpretation
     if het["I_squared"] < 25:
-        i2_interp = "Low heterogeneity"
+        i2_interp = "Interpretation: low heterogeneity"
     elif het["I_squared"] < 50:
-        i2_interp = "Moderate heterogeneity"
+        i2_interp = "Interpretation: moderate heterogeneity"
     elif het["I_squared"] < 75:
-        i2_interp = "Substantial heterogeneity"
+        i2_interp = "Interpretation: substantial heterogeneity"
     else:
-        i2_interp = "Considerable heterogeneity"
+        i2_interp = "Interpretation: considerable heterogeneity"
 
     return {
         "Q": het["Q"],
@@ -442,7 +452,7 @@ def forest_plot_data(
             "weight": s["weight"]
         })
 
-    return {
+    return ForestPlotData({
         "studies": studies,
         "pooled": {
             "effect": transform(result.pooled_effect),
@@ -457,4 +467,4 @@ def forest_plot_data(
         },
         "null_line": 1.0 if exponentiate else 0.0,
         "scale": "log" if exponentiate else "linear"
-    }
+    })

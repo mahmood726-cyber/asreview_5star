@@ -34,6 +34,20 @@ from ..meta_analysis import pool_effects, eggers_test, beggs_test
 from ..prisma import prisma_stats, prisma_flow_data
 
 
+def _to_native(value: Any) -> Any:
+    """Convert NumPy/scalar containers to JSON-serializable Python values."""
+    if isinstance(value, dict):
+        return {str(key): _to_native(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_to_native(item) for item in value]
+    if hasattr(value, "item"):
+        try:
+            return value.item()
+        except ValueError:
+            pass
+    return value
+
+
 # ============================================================
 # Router Setup
 # ============================================================
@@ -165,7 +179,7 @@ async def api_cohens_kappa(request: CohensKappaRequest) -> IRRResponse:
             se=result.se,
             interpretation=result.interpretation,
             p_value=result.p_value,
-            details=result.details
+            details=_to_native(result.details)
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -189,7 +203,7 @@ async def api_fleiss_kappa(request: FleissKappaRequest) -> IRRResponse:
             se=result.se,
             interpretation=result.interpretation,
             p_value=result.p_value,
-            details=result.details
+            details=_to_native(result.details)
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -217,8 +231,7 @@ async def api_pool_effects(request: PoolEffectsRequest) -> MetaAnalysisResponse:
             effects=request.effects,
             standard_errors=request.standard_errors,
             study_names=request.study_names,
-            model=request.model,
-            confidence_level=request.confidence_level
+            model=request.model
         )
         return MetaAnalysisResponse(
             pooled_effect=result.pooled_effect,
@@ -226,10 +239,10 @@ async def api_pool_effects(request: PoolEffectsRequest) -> MetaAnalysisResponse:
             ci_upper=result.ci_upper,
             se=result.se,
             p_value=result.p_value,
-            z_score=result.z_score,
+            z_score=result.z_value,
             model=result.model,
-            heterogeneity=result.heterogeneity,
-            studies=result.studies
+            heterogeneity=_to_native(result.heterogeneity),
+            studies=_to_native(result.studies)
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -253,10 +266,10 @@ async def api_eggers_test(request: BiasTestRequest) -> BiasTestResponse:
             standard_errors=request.standard_errors
         )
         return BiasTestResponse(
-            test_statistic=result.test_statistic,
+            test_statistic=result.statistic,
             p_value=result.p_value,
             interpretation=result.interpretation,
-            details=result.details
+            details=_to_native(result.details)
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -280,10 +293,10 @@ async def api_beggs_test(request: BiasTestRequest) -> BiasTestResponse:
             standard_errors=request.standard_errors
         )
         return BiasTestResponse(
-            test_statistic=result.test_statistic,
+            test_statistic=result.statistic,
             p_value=result.p_value,
             interpretation=result.interpretation,
-            details=result.details
+            details=_to_native(result.details)
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -312,8 +325,8 @@ async def api_prisma_stats(request: PRISMAStatsRequest) -> PRISMAResponse:
             records_not_retrieved=request.records_not_retrieved,
             records_excluded_fulltext=request.records_excluded_fulltext,
             records_from_databases=request.records_from_databases,
-            records_from_registers=request.records_from_registers,
-            records_from_other=request.records_from_other,
+            records_from_registers=request.records_from_registers or 0,
+            records_from_other=request.records_from_other or 0,
             exclusion_reasons=request.exclusion_reasons
         )
         return PRISMAResponse(
@@ -322,13 +335,13 @@ async def api_prisma_stats(request: PRISMAStatsRequest) -> PRISMAResponse:
             records_identified_other=result.records_identified_other,
             records_removed_duplicates=result.records_removed_duplicates,
             records_screened=result.records_screened,
-            records_excluded_screening=result.records_excluded_screening,
-            reports_retrieved=result.reports_retrieved,
+            records_excluded_screening=result.records_excluded_title_abstract,
+            reports_retrieved=result.reports_sought,
             reports_not_retrieved=result.reports_not_retrieved,
             reports_assessed=result.reports_assessed,
             reports_excluded=result.reports_excluded,
             studies_included=result.studies_included,
-            exclusion_reasons=result.exclusion_reasons
+            exclusion_reasons=_to_native(result.exclusion_reasons)
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -353,12 +366,12 @@ async def api_prisma_flow(request: PRISMAStatsRequest) -> PRISMAFlowResponse:
             records_not_retrieved=request.records_not_retrieved,
             records_excluded_fulltext=request.records_excluded_fulltext,
             records_from_databases=request.records_from_databases,
-            records_from_registers=request.records_from_registers,
-            records_from_other=request.records_from_other,
+            records_from_registers=request.records_from_registers or 0,
+            records_from_other=request.records_from_other or 0,
             exclusion_reasons=request.exclusion_reasons
         )
         flow_data = prisma_flow_data(stats)
-        return PRISMAFlowResponse(**flow_data)
+        return PRISMAFlowResponse(**_to_native(flow_data))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:

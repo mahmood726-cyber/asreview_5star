@@ -112,7 +112,7 @@ def bayesian_stopping(
         )
         prob_target_recall = np.mean(current_recalls >= target_recall)
 
-    should_stop = prob_target_recall >= confidence_threshold
+    should_stop = bool(prob_target_recall >= confidence_threshold)
 
     return StoppingResult(
         should_stop=should_stop,
@@ -295,7 +295,7 @@ def safe_stopping(
         else:
             min_consecutive = 50  # Default
 
-    should_stop = consecutive_irrelevant >= min_consecutive
+    should_stop = bool(consecutive_irrelevant >= min_consecutive)
     confidence = min(1.0, consecutive_irrelevant / min_consecutive)
 
     return StoppingResult(
@@ -315,7 +315,7 @@ def safe_stopping(
 def consecutive_irrelevant_stopping(
     consecutive_count: int,
     threshold: int = 50,
-    n_relevant: int = 0
+    n_relevant: Optional[int] = None
 ) -> StoppingResult:
     """
     Simple consecutive irrelevant stopping rule.
@@ -328,8 +328,9 @@ def consecutive_irrelevant_stopping(
         Current count of consecutive irrelevant documents.
     threshold : int
         Number of consecutive irrelevant documents required to stop (default 50).
-    n_relevant : int
-        Number of relevant documents found (for context).
+    n_relevant : Optional[int]
+        Number of relevant documents found. If explicitly zero, the threshold
+        is doubled because no relevant studies have been observed.
 
     Returns
     -------
@@ -342,7 +343,7 @@ def consecutive_irrelevant_stopping(
     else:
         adjusted_threshold = threshold
 
-    should_stop = consecutive_count >= adjusted_threshold
+    should_stop = bool(consecutive_count >= adjusted_threshold)
     confidence = min(1.0, consecutive_count / adjusted_threshold)
 
     return StoppingResult(
