@@ -165,7 +165,7 @@ asreview-5star prisma --total 1000 --duplicates 100 --screened 900 \
 
 ## Contributing
 
-Contributions are welcome! Please see our [Contributing Guide](CONTRIBUTING.md).
+Contributions are welcome. Please open an issue or pull request on the project repository.
 
 ## License
 
