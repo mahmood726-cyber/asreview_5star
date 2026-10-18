@@ -7,6 +7,7 @@ and flow diagram data.
 
 from typing import Dict, List, Optional
 from dataclasses import dataclass
+from numbers import Integral
 
 
 @dataclass
@@ -80,14 +81,52 @@ def prisma_stats(
     PRISMAStats
         PRISMA 2020 compliant statistics.
     """
+    def validate_count(name, value):
+        if isinstance(value, bool) or not isinstance(value, Integral) or value < 0:
+            raise ValueError(f"{name} must be a nonnegative integer")
+
+    counts = {
+        "records_total": records_total,
+        "records_duplicates": records_duplicates,
+        "records_screened": records_screened,
+        "records_excluded_screening": records_excluded_screening,
+        "records_retrieved": records_retrieved,
+        "records_not_retrieved": records_not_retrieved,
+        "records_excluded_fulltext": records_excluded_fulltext,
+        "records_from_registers": records_from_registers,
+        "records_from_other": records_from_other,
+    }
+    for name, value in counts.items():
+        validate_count(name, value)
     if records_from_databases is None:
         records_from_databases = records_total - records_from_registers - records_from_other
+    validate_count("records_from_databases", records_from_databases)
+    if records_from_databases + records_from_registers + records_from_other != records_total:
+        raise ValueError("Source counts must sum to records_total")
+    if records_duplicates > records_total:
+        raise ValueError("records_duplicates cannot exceed records_total")
+    if records_screened > records_total - records_duplicates:
+        raise ValueError("records_screened cannot exceed records remaining after duplicates")
+    if records_excluded_screening > records_screened:
+        raise ValueError("records_excluded_screening cannot exceed records_screened")
+    if records_not_retrieved > records_retrieved:
+        raise ValueError("records_not_retrieved cannot exceed records_retrieved")
 
     reports_assessed = records_retrieved - records_not_retrieved
+    if records_excluded_fulltext > reports_assessed:
+        raise ValueError("records_excluded_fulltext cannot exceed reports assessed")
     studies_included = reports_assessed - records_excluded_fulltext
 
     if exclusion_reasons is None:
         exclusion_reasons = {"Unspecified": records_excluded_fulltext}
+    else:
+        if not isinstance(exclusion_reasons, dict):
+            raise ValueError("exclusion_reasons must be a mapping of reasons to counts")
+        for reason, value in exclusion_reasons.items():
+            validate_count(f"exclusion_reasons[{reason}]", value)
+        if sum(exclusion_reasons.values()) != records_excluded_fulltext:
+            raise ValueError("Exclusion reason counts must sum to records_excluded_fulltext")
+        exclusion_reasons = exclusion_reasons.copy()
 
     return PRISMAStats(
         records_identified_databases=records_from_databases,

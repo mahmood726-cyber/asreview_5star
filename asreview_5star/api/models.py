@@ -3,7 +3,7 @@ Pydantic models for API request/response validation.
 """
 
 from typing import Dict, List, Optional, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 # ============================================================
@@ -126,9 +126,10 @@ class BiasTestResponse(BaseModel):
 
 class PRISMAStatsRequest(BaseModel):
     """Request model for PRISMA statistics."""
-    records_total: int = Field(..., gt=0, description="Total records identified")
+    model_config = ConfigDict(strict=True)
+    records_total: int = Field(..., ge=0, description="Total records identified")
     records_duplicates: int = Field(..., ge=0, description="Duplicates removed")
-    records_screened: int = Field(..., gt=0, description="Records screened")
+    records_screened: int = Field(..., ge=0, description="Records screened")
     records_excluded_screening: int = Field(..., ge=0, description="Excluded at screening")
     records_retrieved: int = Field(..., ge=0, description="Full-text retrieved")
     records_not_retrieved: int = Field(0, ge=0, description="Full-text not retrieved")

@@ -146,8 +146,8 @@ class TestPRISMAFlowData:
         """Test yield rate calculation."""
         stats = prisma_stats(
             records_total=1000,
-            records_duplicates=100,
-            records_screened=1000,  # Use total for simplicity
+            records_duplicates=0,
+            records_screened=1000,  # No duplicates: all records can be screened
             records_excluded_screening=900,
             records_retrieved=100,
             records_not_retrieved=0,
