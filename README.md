@@ -70,6 +70,12 @@ print(f"I-squared: {result.heterogeneity['I_squared']:.1f}%")
 
 ### PRISMA Statistics
 
+Counts must be nonnegative integers. Source totals, duplicate removal, screening,
+retrieval and full-text exclusions are checked for impossible counts. If supplied,
+exclusion-reason counts must sum to the full-text exclusion total. Invalid counts
+raise `ValueError`; the PRISMA API endpoints return HTTP 400 for inconsistent
+counts. The existing one-report-per-included-study assumption remains unchanged.
+
 ```python
 stats = a5s.prisma_stats(
     records_total=1000,
